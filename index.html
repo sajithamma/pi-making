@@ -298,8 +298,8 @@
     const artInfoDiv = document.createElement('div');
     artInfoDiv.className = 'art-info';
     const artInfoLabel = new CSS2DObject(artInfoDiv);
-    artInfoLabel.position.set(1.15, 0.55, 0);
-    artInfoLabel.center.set(0, 0);
+    artInfoLabel.position.set(0, scaleY - 0.14, 0);
+    artInfoLabel.center.set(0.5, 0);
     scene.add(artInfoLabel);
 
     const elPiReached = document.getElementById('pi-reached');
