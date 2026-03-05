@@ -22,23 +22,6 @@
       overflow: hidden;
     }
 
-    #controls {
-      position: fixed;
-      left: 14px;
-      bottom: 14px;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      padding: 10px 12px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      backdrop-filter: blur(8px);
-      color: rgba(255, 255, 255, 0.92);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      font-size: 13px;
-    }
-
     button {
       appearance: none;
       border: 1px solid rgba(255, 255, 255, 0.18);
@@ -213,7 +196,7 @@
     ));
 
     const perimeterMat = new THREE.LineBasicMaterial({ color: 0xa3e635, transparent: true, opacity: 0.95 });
-    const completedLineMat = new THREE.LineBasicMaterial({ color: 0xa3e635, transparent: true, opacity: 0.95 });
+    const completedLineMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.95 });
     let perimeterLine = null;
     const completedLinesGroup = new THREE.Group();
     scene.add(completedLinesGroup);
@@ -271,6 +254,19 @@
     ]);
     scene.add(new THREE.Line(piTickGeom, new THREE.LineBasicMaterial({ color: 0xa3e635, transparent: true, opacity: 0.9 })));
 
+    const piVerticalY0 = scaleY - 0.08;
+    const piVerticalY1 = refY + 0.6;
+    const piDashedGeom = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(refX0 + piLen, piVerticalY0, 0),
+      new THREE.Vector3(refX0 + piLen, piVerticalY1, 0),
+    ]);
+    const piDashedLine = new THREE.Line(
+      piDashedGeom,
+      new THREE.LineDashedMaterial({ color: 0xa3e635, dashSize: 0.08, gapSize: 0.05, transparent: true, opacity: 0.9 })
+    );
+    piDashedLine.computeLineDistances();
+    scene.add(piDashedLine);
+
     const labelY = scaleY - 0.055;
     const scaleLabelsGroup = new THREE.Group();
     const piVal = Math.PI;
@@ -308,11 +304,12 @@
 
     const elPiReached = document.getElementById('pi-reached');
 
-    const btnToggle = document.getElementById('toggle');
-    const btnStep = document.getElementById('step');
-    const btnReset = document.getElementById('reset');
+    const DEFAULT_SPEED = 2;
+    const DEFAULT_MAX_N = 200;
     const rngSpeed = document.getElementById('speed');
     const rngMaxN = document.getElementById('maxn');
+    function getSpeed() { return rngSpeed ? parseFloat(rngSpeed.value) : DEFAULT_SPEED; }
+    function getMaxN() { return rngMaxN ? parseInt(rngMaxN.value, 10) : DEFAULT_MAX_N; }
 
     const DURATION = {
       circle: 2.2,
@@ -343,7 +340,10 @@
       return '';
     }
 
-    btnToggle.addEventListener('click', () => {
+    const btnToggle = document.getElementById('toggle');
+    const btnStep = document.getElementById('step');
+    const btnReset = document.getElementById('reset');
+    if (btnToggle) btnToggle.addEventListener('click', () => {
       running = !running;
       btnToggle.textContent = running ? 'Pause' : 'Play';
     });
@@ -374,28 +374,27 @@
     }
 
     function setN(newN) {
-      const maxN = parseInt(rngMaxN.value, 10);
+      const maxN = getMaxN();
       n = Math.max(3, Math.min(newN, maxN));
     }
 
-    btnStep.addEventListener('click', () => {
+    if (btnStep) btnStep.addEventListener('click', () => {
       running = false;
-      btnToggle.textContent = 'Play';
+      if (btnToggle) btnToggle.textContent = 'Play';
       if (phase === 'circle') goToPhase('polygon');
       else if (phase === 'polygon') goToPhase('unroll');
       else if (phase === 'unroll') { unrollT = 1; goToPhase('show_length'); }
       else if (phase === 'show_length') {
-        const maxN = parseInt(rngMaxN.value, 10);
-        if (n >= maxN) goToPhase('done');
+        if (n >= getMaxN()) goToPhase('done');
         else { saveCompletedLine(n); setN(n + 1); goToPhase('polygon'); }
       } else if (phase === 'done') goToPhase('circle');
       updateGeometry();
       updateHUD();
     });
 
-    btnReset.addEventListener('click', () => {
+    if (btnReset) btnReset.addEventListener('click', () => {
       running = true;
-      btnToggle.textContent = 'Pause';
+      if (btnToggle) btnToggle.textContent = 'Pause';
       goToPhase('circle');
       setN(3);
       unrollT = 0;
@@ -405,11 +404,10 @@
 
     function updateHUD() {
       if (phase === 'circle') {
-        artInfoDiv.innerHTML = 'n — &nbsp; Pₙ — &nbsp; π &nbsp; error —<br><span style="opacity:0.85">' + getPhaseMessage() + '</span>';
+        artInfoDiv.innerHTML = 'n — &nbsp; Pₙ — &nbsp; π<br><span style="opacity:0.85">' + getPhaseMessage() + '</span>';
       } else {
         const Pn = polygonPerimeter(n);
-        const err = (Math.PI - Pn).toFixed(4);
-        artInfoDiv.innerHTML = 'n <b>' + n + '</b> &nbsp; Pₙ <b>' + Pn.toFixed(4) + '</b> &nbsp; π &nbsp; error <b>' + err + '</b><br><span style="opacity:0.85">' + getPhaseMessage() + '</span>';
+        artInfoDiv.innerHTML = 'n <b>' + n + '</b> &nbsp; Pₙ <b>' + Pn.toFixed(4) + '</b> &nbsp; π<br><span style="opacity:0.85">' + getPhaseMessage() + '</span>';
       }
     }
 
@@ -506,7 +504,7 @@
       lastTime = now;
 
       if (running) {
-        const speed = parseFloat(rngSpeed.value);
+        const speed = getSpeed();
         phaseTime += dt * speed;
 
         if (phase === 'circle') {
@@ -533,7 +531,7 @@
           }
         } else if (phase === 'show_length') {
           if (phaseTime >= DURATION.showLength) {
-            const maxN = parseInt(rngMaxN.value, 10);
+            const maxN = getMaxN();
             if (n >= maxN) {
               goToPhase('done');
               elPiReached.classList.add('show');
@@ -566,16 +564,6 @@
 
   <div id="pi-reached" aria-live="polite">
     <div class="box">π ≈ 3.14</div>
-  </div>
-
-  <div id="controls">
-    <button id="toggle">Pause</button>
-    <button id="step">Step +1</button>
-    <span class="muted">Speed</span>
-    <input id="speed" type="range" min="0" max="2" step="0.01" value="2" />
-    <span class="muted">Max n</span>
-    <input id="maxn" type="range" min="10" max="400" step="1" value="200" />
-    <button id="reset">Reset</button>
   </div>
 </body>
 
