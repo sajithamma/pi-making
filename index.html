@@ -181,10 +181,12 @@
         return new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r, 0);
       })
     );
+    const circleOffsetX = -0.55;
     const circleLine = new THREE.Line(
       circleGeom,
       new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 })
     );
+    circleLine.position.x = circleOffsetX;
     scene.add(circleLine);
 
     const axisMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.18 });
@@ -198,7 +200,7 @@
     ));
 
     const perimeterMat = new THREE.LineBasicMaterial({ color: 0xa3e635, transparent: true, opacity: 0.95 });
-    const completedLineMat = new THREE.LineBasicMaterial({ color: 0xa3e635, transparent: true, opacity: 0.28 });
+    const completedLineMat = new THREE.LineBasicMaterial({ color: 0xa3e635, transparent: true, opacity: 0.95 });
     let perimeterLine = null;
     const completedLinesGroup = new THREE.Group();
     scene.add(completedLinesGroup);
@@ -206,6 +208,7 @@
     const piLen = Math.PI;
     const refY = -0.95;
     const refX0 = -piLen / 2;
+    const LINE_GAP = 0.065;
     const refGeom = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(refX0, refY - 0.18, 0),
       new THREE.Vector3(refX0 + piLen, refY - 0.18, 0),
@@ -347,7 +350,7 @@
     function saveCompletedLine(forN) {
       const polyPts = regularPolygonPoints(forN, r, 0);
       const originX = refX0;
-      const pts = perimeterToLinePoints(polyPts, originX, refY, 0);
+      const pts = perimeterToLinePoints(polyPts, originX, lineYForN(forN), 0);
       const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), completedLineMat.clone());
       completedLinesGroup.add(line);
     }
@@ -400,19 +403,24 @@
       );
     }
 
+    function lineYForN(n) {
+      return refY + (n - 3) * LINE_GAP;
+    }
+
     function getPerimeterPoints() {
       const polyPts = regularPolygonPoints(n, r, 0);
       const Pn = polygonPerimeter(n);
       const originX = refX0;
-      const originY = -0.95;
+      const originY = lineYForN(n);
 
       if (phase === 'polygon' || (phase === 'unroll' && unrollT <= 0)) {
-        return polyPts;
+        return polyPts.map((p) => new THREE.Vector3(p.x + circleOffsetX, p.y, p.z));
       }
       if (phase === 'show_length' || phase === 'done' || (phase === 'unroll' && unrollT >= 1)) {
         return perimeterToLinePoints(polyPts, originX, originY, 0);
       }
 
+      const polyOff = (p) => new THREE.Vector3(p.x + circleOffsetX, p.y, p.z);
       const unfolded = [];
       let x = originX;
       unfolded.push(new THREE.Vector3(x, originY, 0));
@@ -427,16 +435,16 @@
       if (seg >= n) return unfolded;
 
       const pts = [];
-      if (seg === 0 && segT <= 0) return polyPts;
+      if (seg === 0 && segT <= 0) return polyPts.map(polyOff);
 
       if (seg === 0) {
-        pts.push(lerpV3(polyPts[0], unfolded[0], segT));
-        pts.push(lerpV3(polyPts[1], unfolded[1], segT));
-        for (let i = 2; i <= n - 1; i++) pts.push(polyPts[i].clone());
+        pts.push(lerpV3(polyOff(polyPts[0]), unfolded[0], segT));
+        pts.push(lerpV3(polyOff(polyPts[1]), unfolded[1], segT));
+        for (let i = 2; i <= n - 1; i++) pts.push(polyOff(polyPts[i]));
       } else {
         for (let i = 0; i <= seg; i++) pts.push(unfolded[i].clone());
-        pts.push(lerpV3(polyPts[seg + 1], unfolded[seg + 1], segT));
-        for (let i = seg + 2; i <= n - 1; i++) pts.push(polyPts[i].clone());
+        pts.push(lerpV3(polyOff(polyPts[seg + 1]), unfolded[seg + 1], segT));
+        for (let i = seg + 2; i <= n - 1; i++) pts.push(polyOff(polyPts[i]));
       }
       return pts;
     }
@@ -542,7 +550,7 @@
     <button id="toggle">Pause</button>
     <button id="step">Step +1</button>
     <span class="muted">Speed</span>
-    <input id="speed" type="range" min="0" max="2" step="0.01" value="1" />
+    <input id="speed" type="range" min="0" max="2" step="0.01" value="2" />
     <span class="muted">Max n</span>
     <input id="maxn" type="range" min="10" max="400" step="1" value="200" />
     <button id="reset">Reset</button>
