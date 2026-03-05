@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>π from Inscribed Polygons (Diameter = 1)</title>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <style>
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background: #0b0e14;
+      overflow: hidden;
+    }
+
+    #hud {
+      position: fixed;
+      left: 14px;
+      top: 14px;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      font-size: 14px;
+      line-height: 1.35;
+      color: rgba(255, 255, 255, 0.92);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 10px 12px;
+      backdrop-filter: blur(8px);
+      max-width: min(420px, calc(100vw - 28px));
+    }
+
+    #hud b {
+      font-weight: 700;
+    }
+
+    #hud .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    #hud .pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #controls {
+      position: fixed;
+      left: 14px;
+      bottom: 14px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(8px);
+      color: rgba(255, 255, 255, 0.92);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      font-size: 13px;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.92);
+      padding: 8px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    input[type="range"] {
+      width: 160px;
+    }
+
+    .muted {
+      color: rgba(255, 255, 255, 0.70);
+    }
+
+    .teaching {
+      font-size: 12px;
+      color: rgba(167, 243, 208, 0.9);
+      line-height: 1.4;
+    }
+
+    #phase-msg {
+      margin-top: 6px;
+      font-size: 13px;
+      color: rgba(167, 243, 208, 0.95);
+      min-height: 1.4em;
+    }
+
+    #pi-reached {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(11, 14, 20, 0.85);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      pointer-events: none;
+    }
+    #pi-reached.show { display: flex; }
+    #pi-reached .box {
+      font-size: clamp(28px, 6vw, 48px);
+      font-weight: 700;
+      color: #a3e635;
+      text-shadow: 0 0 24px rgba(163, 230, 53, 0.5);
+    }
+  </style>
+</head>
+
+<body>
+  <script type="module">
+
+    import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+
+    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+
+    const TAU = Math.PI * 2;
+    const DIAMETER = 1;
+    const r = DIAMETER / 2; // 0.5
+
+    function polygonPerimeter(n) {
+      return 2 * n * r * Math.sin(Math.PI / n);
+    }
+
+    function regularPolygonPoints(n, radius, z = 0) {
+      const pts = [];
+      const start = -Math.PI / 2;
+      for (let i = 0; i < n; i++) {
+        const a = start + (TAU * i) / n;
+        pts.push(new THREE.Vector3(Math.cos(a) * radius, Math.sin(a) * radius, z));
+      }
+      pts.push(pts[0].clone());
+      return pts;
+    }
+
+    function perimeterToLinePoints(polygonPts, originX, originY, z = 0) {
+      const out = [new THREE.Vector3(originX, originY, z)];
+      let x = originX;
+      for (let i = 0; i < polygonPts.length - 1; i++) {
+        const a = polygonPts[i];
+        const b = polygonPts[i + 1];
+        const len = a.distanceTo(b);
+        x += len;
+        out.push(new THREE.Vector3(x, originY, z));
+      }
+      return out;
+    }
+
+    const scene = new THREE.Scene();
+
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.01, 100);
+    camera.position.set(0, 1.35, 3.0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.target.set(0, 0, 0);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+    dir.position.set(3, 5, 4);
+    scene.add(dir);
+
+    const grid = new THREE.GridHelper(20, 40, 0xffffff, 0xffffff);
+    grid.position.y = -1.1;
+    grid.material.opacity = 0.10;
+    grid.material.transparent = true;
+    scene.add(grid);
+
+    const circleGeom = new THREE.BufferGeometry().setFromPoints(
+      Array.from({ length: 361 }, (_, i) => {
+        const a = (TAU * i) / 360;
+        return new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r, 0);
+      })
+    );
+    const circleLine = new THREE.Line(
+      circleGeom,
+      new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 })
+    );
+    scene.add(circleLine);
+
+    const axisMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.18 });
+    scene.add(new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-4, 0, 0), new THREE.Vector3(4, 0, 0)]),
+      axisMat
+    ));
+    scene.add(new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, -3, 0), new THREE.Vector3(0, 3, 0)]),
+      axisMat
+    ));
+
+    const perimeterMat = new THREE.LineBasicMaterial({ color: 0xa3e635, transparent: true, opacity: 0.95 });
+    let perimeterLine = null;
+
+    const piLen = Math.PI;
+    const refY = -0.95;
+    const refX0 = -piLen / 2;
+    const refGeom = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(refX0, refY - 0.18, 0),
+      new THREE.Vector3(refX0 + piLen, refY - 0.18, 0),
+    ]);
+    scene.add(new THREE.Line(
+      refGeom,
+      new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 })
+    ));
+
+    function tick(x, y) {
+      const g = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(x, y - 0.05, 0),
+        new THREE.Vector3(x, y + 0.05, 0),
+      ]);
+      scene.add(new THREE.Line(
+        g,
+        new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 })
+      ));
+    }
+    tick(refX0, refY - 0.18);
+    tick(refX0 + piLen, refY - 0.18);
+
+    const elN = document.getElementById('n');
+    const elP = document.getElementById('p');
+    const elPi = document.getElementById('pi');
+    const elErr = document.getElementById('err');
+    const elPhaseMsg = document.getElementById('phase-msg');
+    const elPiReached = document.getElementById('pi-reached');
+    elPi.textContent = Math.PI.toFixed(10);
+
+    const btnToggle = document.getElementById('toggle');
+    const btnStep = document.getElementById('step');
+    const btnReset = document.getElementById('reset');
+    const rngSpeed = document.getElementById('speed');
+    const rngMaxN = document.getElementById('maxn');
+
+    const DURATION = {
+      circle: 2.2,
+      polygon: 1.4,
+      unroll: 1.8,
+      showLength: 2.2,
+      piReached: 4
+    };
+
+    const NAMES = ['', '', '', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'nonagon', 'decagon'];
+
+    let running = true;
+    let n = 3;
+    let phase = 'circle';
+    let phaseTime = 0;
+    let unrollT = 0;
+
+    function phaseName(n) {
+      return NAMES[n] || n + '-gon';
+    }
+
+    function getPhaseMessage() {
+      if (phase === 'circle') return '① Circle (diameter = 1 → circumference = π)';
+      if (phase === 'polygon') return '② ' + phaseName(n) + ' inside: polygon split into ' + n + ' sides';
+      if (phase === 'unroll') return '③ Same perimeter unfolding one by one into the horizontal line';
+      if (phase === 'show_length') return '④ Length = Pₙ. More sides → longer line → approaches π';
+      if (phase === 'done') return 'π reached ≈ 3.14';
+      return '';
+    }
+
+    btnToggle.addEventListener('click', () => {
+      running = !running;
+      btnToggle.textContent = running ? 'Pause' : 'Play';
+    });
+
+    function goToPhase(p) {
+      phase = p;
+      phaseTime = 0;
+      if (p === 'unroll') unrollT = 0;
+      if (p === 'circle') {
+        elPiReached.classList.remove('show');
+        n = 3;
+      }
+      if (p === 'done') elPiReached.classList.add('show');
+    }
+
+    function setN(newN) {
+      const maxN = parseInt(rngMaxN.value, 10);
+      n = Math.max(3, Math.min(newN, maxN));
+    }
+
+    btnStep.addEventListener('click', () => {
+      running = false;
+      btnToggle.textContent = 'Play';
+      if (phase === 'circle') goToPhase('polygon');
+      else if (phase === 'polygon') goToPhase('unroll');
+      else if (phase === 'unroll') { unrollT = 1; goToPhase('show_length'); }
+      else if (phase === 'show_length') {
+        const maxN = parseInt(rngMaxN.value, 10);
+        if (n >= maxN) goToPhase('done');
+        else { setN(n + 1); goToPhase('polygon'); }
+      } else if (phase === 'done') goToPhase('circle');
+      updateGeometry();
+      updateHUD();
+      elPhaseMsg.textContent = getPhaseMessage();
+    });
+
+    btnReset.addEventListener('click', () => {
+      running = true;
+      btnToggle.textContent = 'Pause';
+      goToPhase('circle');
+      setN(3);
+      unrollT = 0;
+      updateGeometry();
+      updateHUD();
+      elPhaseMsg.textContent = getPhaseMessage();
+    });
+
+    function updateHUD() {
+      if (phase === 'circle') {
+        elN.textContent = '—';
+        elP.textContent = '—';
+        elErr.textContent = '—';
+      } else {
+        const Pn = polygonPerimeter(n);
+        elN.textContent = String(n);
+        elP.textContent = Pn.toFixed(10);
+        elErr.textContent = (Math.PI - Pn).toFixed(10);
+      }
+      elPhaseMsg.textContent = getPhaseMessage();
+    }
+
+    function lerpV3(a, b, t) {
+      return new THREE.Vector3(
+        a.x + (b.x - a.x) * t,
+        a.y + (b.y - a.y) * t,
+        a.z + (b.z - a.z) * t
+      );
+    }
+
+    function getPerimeterPoints() {
+      const polyPts = regularPolygonPoints(n, r, 0);
+      const Pn = polygonPerimeter(n);
+      const originX = -Pn / 2;
+      const originY = -0.95;
+
+      if (phase === 'polygon' || (phase === 'unroll' && unrollT <= 0)) {
+        return polyPts;
+      }
+      if (phase === 'show_length' || phase === 'done' || (phase === 'unroll' && unrollT >= 1)) {
+        return perimeterToLinePoints(polyPts, originX, originY, 0);
+      }
+
+      const unfolded = [];
+      let x = originX;
+      unfolded.push(new THREE.Vector3(x, originY, 0));
+      for (let i = 0; i < n; i++) {
+        const len = polyPts[i].distanceTo(polyPts[i + 1]);
+        x += len;
+        unfolded.push(new THREE.Vector3(x, originY, 0));
+      }
+
+      const seg = Math.floor(unrollT * n);
+      const segT = (unrollT * n - seg);
+      if (seg >= n) return unfolded;
+
+      const pts = [];
+      if (seg === 0 && segT <= 0) return polyPts;
+
+      if (seg === 0) {
+        pts.push(lerpV3(polyPts[0], unfolded[0], segT));
+        pts.push(lerpV3(polyPts[1], unfolded[1], segT));
+        for (let i = 2; i <= n - 1; i++) pts.push(polyPts[i].clone());
+      } else {
+        for (let i = 0; i <= seg; i++) pts.push(unfolded[i].clone());
+        pts.push(lerpV3(polyPts[seg + 1], unfolded[seg + 1], segT));
+        for (let i = seg + 2; i <= n - 1; i++) pts.push(polyPts[i].clone());
+      }
+      return pts;
+    }
+
+    function updateGeometry() {
+      if (perimeterLine) {
+        scene.remove(perimeterLine);
+        perimeterLine.geometry.dispose();
+        perimeterLine = null;
+      }
+
+      if (phase === 'circle' || n < 3) return;
+
+      const pts = getPerimeterPoints();
+      if (pts.length < 2) return;
+      perimeterLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), perimeterMat);
+      scene.add(perimeterLine);
+    }
+
+    updateGeometry();
+    updateHUD();
+
+    function onResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+    window.addEventListener('resize', onResize);
+
+    let lastTime = performance.now();
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      const now = performance.now();
+      const dt = Math.min(0.05, (now - lastTime) / 1000);
+      lastTime = now;
+
+      if (running) {
+        const speed = parseFloat(rngSpeed.value);
+        phaseTime += dt * speed;
+
+        if (phase === 'circle') {
+          if (phaseTime >= DURATION.circle) {
+            goToPhase('polygon');
+            setN(3);
+            updateGeometry();
+            updateHUD();
+          }
+        } else if (phase === 'polygon') {
+          if (phaseTime >= DURATION.polygon) {
+            goToPhase('unroll');
+            unrollT = 0;
+          }
+        } else if (phase === 'unroll') {
+          unrollT = Math.min(1, phaseTime / DURATION.unroll);
+          unrollT = 0.5 - 0.5 * Math.cos(unrollT * Math.PI);
+          updateGeometry();
+          if (phaseTime >= DURATION.unroll) {
+            unrollT = 1;
+            goToPhase('show_length');
+            updateGeometry();
+            updateHUD();
+          }
+        } else if (phase === 'show_length') {
+          if (phaseTime >= DURATION.showLength) {
+            const maxN = parseInt(rngMaxN.value, 10);
+            if (n >= maxN) {
+              goToPhase('done');
+              elPiReached.classList.add('show');
+            } else {
+              setN(n + 1);
+              goToPhase('polygon');
+            }
+            updateGeometry();
+            updateHUD();
+          }
+        } else if (phase === 'done') {
+          if (phaseTime >= DURATION.piReached) {
+            goToPhase('circle');
+            setN(3);
+            unrollT = 0;
+            elPiReached.classList.remove('show');
+            updateGeometry();
+            updateHUD();
+          }
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+  </script>
+
+  <div id="hud">
+    <div style="font-size: 15px; margin-bottom: 6px;"><b>π approximation</b> using inscribed polygons</div>
+    <div class="muted" style="margin-bottom: 6px;">Circle diameter = 1 → circumference = π.</div>
+    <div class="teaching" style="margin-bottom: 8px;">Same perimeter: polygon <b>unfolds one by one</b> into the horizontal line. More sides → longer line → approaches π.</div>
+    <div class="row">
+      <div class="pill"><span class="muted">n</span> <b id="n">3</b></div>
+      <div class="pill"><span class="muted">Pₙ</span> <b id="p">0</b></div>
+      <div class="pill"><span class="muted">π</span> <b id="pi">3.1415926536</b></div>
+      <div class="pill"><span class="muted">error</span> <b id="err">0</b></div>
+    </div>
+    <div id="phase-msg"></div>
+  </div>
+
+  <div id="pi-reached" aria-live="polite">
+    <div class="box">π ≈ 3.14</div>
+  </div>
+
+  <div id="controls">
+    <button id="toggle">Pause</button>
+    <button id="step">Step +1</button>
+    <span class="muted">Speed</span>
+    <input id="speed" type="range" min="0" max="2" step="0.01" value="1" />
+    <span class="muted">Max n</span>
+    <input id="maxn" type="range" min="10" max="400" step="1" value="200" />
+    <button id="reset">Reset</button>
+  </div>
+</body>
+
+</html>
