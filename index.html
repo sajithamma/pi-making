@@ -56,11 +56,15 @@
     }
     #pi-reached.show { display: flex; }
     #pi-reached .box {
-      font-size: clamp(28px, 6vw, 48px);
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: clamp(22px, 4.5vw, 38px);
       font-weight: 700;
-      color: #a3e635;
-      text-shadow: 0 0 24px rgba(163, 230, 53, 0.5);
+      color: rgba(255, 255, 255, 0.95);
+      text-align: center;
+      line-height: 1.4;
     }
+    #pi-reached .box .pi-highlight { color: #a3e635; text-shadow: 0 0 24px rgba(163, 230, 53, 0.5); }
+    #pi-reached .box .pi-more { color: rgba(255, 255, 255, 0.5); font-weight: 600; }
 
     .scale-label {
       font-family: ui-monospace, "SF Mono", Monaco, monospace;
@@ -92,6 +96,9 @@
 
     import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
     import { CSS2DRenderer, CSS2DObject } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/renderers/CSS2DRenderer.js';
+    import { Line2 } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/lines/Line2.js';
+    import { LineGeometry } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/lines/LineGeometry.js';
+    import { LineMaterial } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/lines/LineMaterial.js';
 
     const TAU = Math.PI * 2;
     const DIAMETER = 1;
@@ -180,7 +187,7 @@
     );
     const circleLine = new THREE.Line(
       circleGeom,
-      new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 })
+      new THREE.LineBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.95 })
     );
     circleLine.position.x = circleOffsetX;
     scene.add(circleLine);
@@ -195,7 +202,7 @@
       axisMat
     ));
 
-    const perimeterMat = new THREE.LineBasicMaterial({ color: 0xa3e635, transparent: true, opacity: 0.95 });
+    const PERIMETER_LINE_WIDTH = 0.022;
     const completedLineMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.95 });
     let perimeterLine = null;
     const completedLinesGroup = new THREE.Group();
@@ -305,7 +312,7 @@
     const elPiReached = document.getElementById('pi-reached');
 
     const DEFAULT_SPEED = 2;
-    const DEFAULT_MAX_N = 200;
+    const DEFAULT_MAX_N = 30;
     const rngSpeed = document.getElementById('speed');
     const rngMaxN = document.getElementById('maxn');
     function getSpeed() { return rngSpeed ? parseFloat(rngSpeed.value) : DEFAULT_SPEED; }
@@ -387,7 +394,7 @@
       else if (phase === 'show_length') {
         if (n >= getMaxN()) goToPhase('done');
         else { saveCompletedLine(n); setN(n + 1); goToPhase('polygon'); }
-      } else if (phase === 'done') goToPhase('circle');
+      } else if (phase === 'done') { /* stay at final stage */ }
       updateGeometry();
       updateHUD();
     });
@@ -404,10 +411,10 @@
 
     function updateHUD() {
       if (phase === 'circle') {
-        artInfoDiv.innerHTML = 'n — &nbsp; Pₙ — &nbsp; π<br><span style="opacity:0.85">' + getPhaseMessage() + '</span>';
+        artInfoDiv.innerHTML = 'n — &nbsp; length —';
       } else {
         const Pn = polygonPerimeter(n);
-        artInfoDiv.innerHTML = 'n <b>' + n + '</b> &nbsp; Pₙ <b>' + Pn.toFixed(4) + '</b> &nbsp; π<br><span style="opacity:0.85">' + getPhaseMessage() + '</span>';
+        artInfoDiv.innerHTML = 'n <b>' + n + '</b> &nbsp; <b>' + Pn.toFixed(4) + '</b>';
       }
     }
 
@@ -469,6 +476,7 @@
       if (perimeterLine) {
         scene.remove(perimeterLine);
         perimeterLine.geometry.dispose();
+        perimeterLine.material.dispose();
         perimeterLine = null;
       }
 
@@ -476,7 +484,14 @@
 
       const pts = getPerimeterPoints();
       if (pts.length < 2) return;
-      perimeterLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), perimeterMat);
+      const positions = [];
+      pts.forEach((p) => { positions.push(p.x, p.y, p.z); });
+      const lineGeom = new LineGeometry();
+      lineGeom.setPositions(positions);
+      const lineMat = new LineMaterial({ color: 0xa3e635, linewidth: PERIMETER_LINE_WIDTH, worldUnits: true });
+      const res = renderer.getSize(new THREE.Vector2());
+      lineMat.resolution.set(res.x, res.y);
+      perimeterLine = new Line2(lineGeom, lineMat);
       scene.add(perimeterLine);
     }
 
@@ -504,7 +519,8 @@
       lastTime = now;
 
       if (running) {
-        const speed = getSpeed() * (n > 7 ? 2 : 1);
+        const speedMult = n >= 8 ? Math.min(2 ** (1 + Math.floor((n - 8) / 5)), 32) : 1;
+        const speed = getSpeed() * speedMult;
         phaseTime += dt * speed;
 
         if (phase === 'circle') {
@@ -534,6 +550,12 @@
             const maxN = getMaxN();
             if (n >= maxN) {
               goToPhase('done');
+              const box = document.getElementById('pi-reached').querySelector('.box');
+              const PnFinal = polygonPerimeter(n).toFixed(10);
+              const piStr = Math.PI.toFixed(14);
+              const piHighlight = piStr.slice(0, 4);
+              const piMore = piStr.slice(4);
+              box.innerHTML = '<div style="margin-bottom:0.4em;">At n = ' + n + ': <b>Pₙ = ' + PnFinal + '</b></div><div>As n → ∞: π = <span class="pi-highlight">' + piHighlight + '</span><span class="pi-more">' + piMore + '</span></div>';
               elPiReached.classList.add('show');
             } else {
               saveCompletedLine(n);
@@ -544,14 +566,7 @@
             updateHUD();
           }
         } else if (phase === 'done') {
-          if (phaseTime >= DURATION.piReached) {
-            goToPhase('circle');
-            setN(3);
-            unrollT = 0;
-            elPiReached.classList.remove('show');
-            updateGeometry();
-            updateHUD();
-          }
+          // stay at final stage, no restart
         }
       }
 
