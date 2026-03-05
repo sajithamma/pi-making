@@ -22,42 +22,6 @@
       overflow: hidden;
     }
 
-    #hud {
-      position: fixed;
-      left: 14px;
-      top: 14px;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      font-size: 14px;
-      line-height: 1.35;
-      color: rgba(255, 255, 255, 0.92);
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 12px;
-      padding: 10px 12px;
-      backdrop-filter: blur(8px);
-      max-width: min(420px, calc(100vw - 28px));
-    }
-
-    #hud b {
-      font-weight: 700;
-    }
-
-    #hud .row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    #hud .pill {
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.10);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
     #controls {
       position: fixed;
       left: 14px;
@@ -97,19 +61,6 @@
       color: rgba(255, 255, 255, 0.70);
     }
 
-    .teaching {
-      font-size: 12px;
-      color: rgba(167, 243, 208, 0.9);
-      line-height: 1.4;
-    }
-
-    #phase-msg {
-      margin-top: 6px;
-      font-size: 13px;
-      color: rgba(167, 243, 208, 0.95);
-      min-height: 1.4em;
-    }
-
     #pi-reached {
       position: fixed;
       inset: 0;
@@ -127,6 +78,27 @@
       color: #a3e635;
       text-shadow: 0 0 24px rgba(163, 230, 53, 0.5);
     }
+
+    .scale-label {
+      font-family: ui-monospace, "SF Mono", Monaco, monospace;
+      font-size: 9px;
+      color: rgba(255, 255, 255, 0.88);
+      white-space: nowrap;
+      text-shadow: 0 0 4px rgba(0,0,0,0.8);
+      pointer-events: none;
+    }
+    .scale-label.major { font-weight: 700; font-size: 10px; }
+    .scale-label.pi { color: #a3e635; font-weight: 700; font-size: 11px; }
+    .art-info {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.9);
+      background: rgba(0,0,0,0.4);
+      padding: 6px 10px;
+      border-radius: 8px;
+      white-space: nowrap;
+      pointer-events: none;
+    }
   </style>
 </head>
 
@@ -136,6 +108,7 @@
     import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
 
     import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+    import { CSS2DRenderer, CSS2DObject } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/renderers/CSS2DRenderer.js';
 
     const TAU = Math.PI * 2;
     const DIAMETER = 1;
@@ -179,6 +152,14 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
+    const labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.domElement.style.position = 'absolute';
+    labelRenderer.domElement.style.top = '0';
+    labelRenderer.domElement.style.left = '0';
+    labelRenderer.domElement.style.pointerEvents = 'none';
+    document.body.appendChild(labelRenderer.domElement);
+
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.target.set(0, 0, 0);
@@ -217,7 +198,10 @@
     ));
 
     const perimeterMat = new THREE.LineBasicMaterial({ color: 0xa3e635, transparent: true, opacity: 0.95 });
+    const completedLineMat = new THREE.LineBasicMaterial({ color: 0xa3e635, transparent: true, opacity: 0.28 });
     let perimeterLine = null;
+    const completedLinesGroup = new THREE.Group();
+    scene.add(completedLinesGroup);
 
     const piLen = Math.PI;
     const refY = -0.95;
@@ -244,13 +228,64 @@
     tick(refX0, refY - 0.18);
     tick(refX0 + piLen, refY - 0.18);
 
-    const elN = document.getElementById('n');
-    const elP = document.getElementById('p');
-    const elPi = document.getElementById('pi');
-    const elErr = document.getElementById('err');
-    const elPhaseMsg = document.getElementById('phase-msg');
+    const scaleY = refY - 0.20;
+    const scaleTickLenMinor = 0.03;
+    const scaleTickLenMajor = 0.07;
+    const scaleMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+    const scaleLine = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(refX0, scaleY, 0),
+        new THREE.Vector3(refX0 + piLen, scaleY, 0),
+      ]),
+      scaleMat
+    );
+    scene.add(scaleLine);
+    for (let i = 0; i <= 31; i++) {
+      const v = i * 0.1;
+      const x = refX0 + v;
+      const isMajor = Math.abs(v - Math.round(v)) < 0.01 && v <= 3;
+      const len = isMajor ? scaleTickLenMajor : scaleTickLenMinor;
+      const g = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(x, scaleY, 0),
+        new THREE.Vector3(x, scaleY + len, 0),
+      ]);
+      scene.add(new THREE.Line(g, scaleMat));
+    }
+    const piTickGeom = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(refX0 + piLen, scaleY, 0),
+      new THREE.Vector3(refX0 + piLen, scaleY + scaleTickLenMajor * 1.3, 0),
+    ]);
+    scene.add(new THREE.Line(piTickGeom, new THREE.LineBasicMaterial({ color: 0xa3e635, transparent: true, opacity: 0.9 })));
+
+    const labelY = scaleY - 0.055;
+    const scaleLabelsGroup = new THREE.Group();
+    const piVal = Math.PI;
+    [1, 2, 3].forEach((v) => {
+      const div = document.createElement('div');
+      div.className = 'scale-label major';
+      div.textContent = String(v);
+      const obj = new CSS2DObject(div);
+      obj.position.set(refX0 + v, labelY, 0);
+      obj.center.set(0.5, 1);
+      scaleLabelsGroup.add(obj);
+    });
+    const piDiv = document.createElement('div');
+    piDiv.className = 'scale-label pi';
+    piDiv.textContent = '3.14';
+    const piLabel = new CSS2DObject(piDiv);
+    piLabel.position.set(refX0 + piVal, labelY, 0);
+    piLabel.center.set(0.5, 1);
+    scaleLabelsGroup.add(piLabel);
+    scene.add(scaleLabelsGroup);
+
+    const artInfoDiv = document.createElement('div');
+    artInfoDiv.className = 'art-info';
+    const artInfoLabel = new CSS2DObject(artInfoDiv);
+    artInfoLabel.position.set(1.15, 0.55, 0);
+    artInfoLabel.center.set(0, 0);
+    scene.add(artInfoLabel);
+
     const elPiReached = document.getElementById('pi-reached');
-    elPi.textContent = Math.PI.toFixed(10);
 
     const btnToggle = document.getElementById('toggle');
     const btnStep = document.getElementById('step');
@@ -299,8 +334,22 @@
       if (p === 'circle') {
         elPiReached.classList.remove('show');
         n = 3;
+        while (completedLinesGroup.children.length) {
+          const c = completedLinesGroup.children[0];
+          completedLinesGroup.remove(c);
+          c.geometry.dispose();
+          if (c.material) c.material.dispose();
+        }
       }
       if (p === 'done') elPiReached.classList.add('show');
+    }
+
+    function saveCompletedLine(forN) {
+      const polyPts = regularPolygonPoints(forN, r, 0);
+      const originX = refX0;
+      const pts = perimeterToLinePoints(polyPts, originX, refY, 0);
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), completedLineMat.clone());
+      completedLinesGroup.add(line);
     }
 
     function setN(newN) {
@@ -317,11 +366,10 @@
       else if (phase === 'show_length') {
         const maxN = parseInt(rngMaxN.value, 10);
         if (n >= maxN) goToPhase('done');
-        else { setN(n + 1); goToPhase('polygon'); }
+        else { saveCompletedLine(n); setN(n + 1); goToPhase('polygon'); }
       } else if (phase === 'done') goToPhase('circle');
       updateGeometry();
       updateHUD();
-      elPhaseMsg.textContent = getPhaseMessage();
     });
 
     btnReset.addEventListener('click', () => {
@@ -332,21 +380,16 @@
       unrollT = 0;
       updateGeometry();
       updateHUD();
-      elPhaseMsg.textContent = getPhaseMessage();
     });
 
     function updateHUD() {
       if (phase === 'circle') {
-        elN.textContent = '—';
-        elP.textContent = '—';
-        elErr.textContent = '—';
+        artInfoDiv.innerHTML = 'n — &nbsp; Pₙ — &nbsp; π &nbsp; error —<br><span style="opacity:0.85">' + getPhaseMessage() + '</span>';
       } else {
         const Pn = polygonPerimeter(n);
-        elN.textContent = String(n);
-        elP.textContent = Pn.toFixed(10);
-        elErr.textContent = (Math.PI - Pn).toFixed(10);
+        const err = (Math.PI - Pn).toFixed(4);
+        artInfoDiv.innerHTML = 'n <b>' + n + '</b> &nbsp; Pₙ <b>' + Pn.toFixed(4) + '</b> &nbsp; π &nbsp; error <b>' + err + '</b><br><span style="opacity:0.85">' + getPhaseMessage() + '</span>';
       }
-      elPhaseMsg.textContent = getPhaseMessage();
     }
 
     function lerpV3(a, b, t) {
@@ -360,7 +403,7 @@
     function getPerimeterPoints() {
       const polyPts = regularPolygonPoints(n, r, 0);
       const Pn = polygonPerimeter(n);
-      const originX = -Pn / 2;
+      const originX = refX0;
       const originY = -0.95;
 
       if (phase === 'polygon' || (phase === 'unroll' && unrollT <= 0)) {
@@ -420,6 +463,7 @@
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
+      labelRenderer.setSize(window.innerWidth, window.innerHeight);
     }
     window.addEventListener('resize', onResize);
 
@@ -464,6 +508,7 @@
               goToPhase('done');
               elPiReached.classList.add('show');
             } else {
+              saveCompletedLine(n);
               setN(n + 1);
               goToPhase('polygon');
             }
@@ -483,23 +528,11 @@
       }
 
       renderer.render(scene, camera);
+      labelRenderer.render(scene, camera);
     }
     animate();
 
   </script>
-
-  <div id="hud">
-    <div style="font-size: 15px; margin-bottom: 6px;"><b>π approximation</b> using inscribed polygons</div>
-    <div class="muted" style="margin-bottom: 6px;">Circle diameter = 1 → circumference = π.</div>
-    <div class="teaching" style="margin-bottom: 8px;">Same perimeter: polygon <b>unfolds one by one</b> into the horizontal line. More sides → longer line → approaches π.</div>
-    <div class="row">
-      <div class="pill"><span class="muted">n</span> <b id="n">3</b></div>
-      <div class="pill"><span class="muted">Pₙ</span> <b id="p">0</b></div>
-      <div class="pill"><span class="muted">π</span> <b id="pi">3.1415926536</b></div>
-      <div class="pill"><span class="muted">error</span> <b id="err">0</b></div>
-    </div>
-    <div id="phase-msg"></div>
-  </div>
 
   <div id="pi-reached" aria-live="polite">
     <div class="box">π ≈ 3.14</div>
