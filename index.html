@@ -144,8 +144,18 @@
 
     const scene = new THREE.Scene();
 
-    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.01, 100);
-    camera.position.set(0, 1.35, 3.0);
+    const frustumSize = 4;
+    const aspect = window.innerWidth / window.innerHeight;
+    const camera = new THREE.OrthographicCamera(
+      -frustumSize * aspect / 2,
+      frustumSize * aspect / 2,
+      frustumSize / 2,
+      -frustumSize / 2,
+      0.01,
+      100
+    );
+    camera.position.set(0, 0, 5);
+    camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -175,13 +185,16 @@
     grid.material.transparent = true;
     scene.add(grid);
 
+    const piLen = Math.PI;
+    const refX0 = -piLen / 2;
+    const circleOffsetX = refX0 - r;
+
     const circleGeom = new THREE.BufferGeometry().setFromPoints(
       Array.from({ length: 361 }, (_, i) => {
         const a = (TAU * i) / 360;
         return new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r, 0);
       })
     );
-    const circleOffsetX = -0.55;
     const circleLine = new THREE.Line(
       circleGeom,
       new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 })
@@ -205,9 +218,7 @@
     const completedLinesGroup = new THREE.Group();
     scene.add(completedLinesGroup);
 
-    const piLen = Math.PI;
     const refY = -0.95;
-    const refX0 = -piLen / 2;
     const LINE_GAP = 0.065;
     const refGeom = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(refX0, refY - 0.18, 0),
@@ -263,6 +274,13 @@
     const labelY = scaleY - 0.055;
     const scaleLabelsGroup = new THREE.Group();
     const piVal = Math.PI;
+    const zeroDiv = document.createElement('div');
+    zeroDiv.className = 'scale-label major';
+    zeroDiv.textContent = '0';
+    const zeroLabel = new CSS2DObject(zeroDiv);
+    zeroLabel.position.set(refX0, labelY, 0);
+    zeroLabel.center.set(0.5, 1);
+    scaleLabelsGroup.add(zeroLabel);
     [1, 2, 3].forEach((v) => {
       const div = document.createElement('div');
       div.className = 'scale-label major';
@@ -468,7 +486,11 @@
     updateHUD();
 
     function onResize() {
-      camera.aspect = window.innerWidth / window.innerHeight;
+      const aspect = window.innerWidth / window.innerHeight;
+      camera.left = -frustumSize * aspect / 2;
+      camera.right = frustumSize * aspect / 2;
+      camera.top = frustumSize / 2;
+      camera.bottom = -frustumSize / 2;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
       labelRenderer.setSize(window.innerWidth, window.innerHeight);
