@@ -202,7 +202,7 @@
     scene.add(completedLinesGroup);
 
     const refY = -0.95;
-    const LINE_GAP = 0.065;
+    const LINE_GAP = 0.042;
     const refGeom = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(refX0, refY - 0.18, 0),
       new THREE.Vector3(refX0 + piLen, refY - 0.18, 0),
@@ -504,7 +504,7 @@
       lastTime = now;
 
       if (running) {
-        const speed = getSpeed();
+        const speed = getSpeed() * (n > 7 ? 2 : 1);
         phaseTime += dt * speed;
 
         if (phase === 'circle') {
