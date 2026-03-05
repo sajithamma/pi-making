@@ -68,17 +68,17 @@
 
     .scale-label {
       font-family: ui-monospace, "SF Mono", Monaco, monospace;
-      font-size: 9px;
+      font-size: 13px;
       color: rgba(255, 255, 255, 0.88);
       white-space: nowrap;
       text-shadow: 0 0 4px rgba(0,0,0,0.8);
       pointer-events: none;
     }
-    .scale-label.major { font-weight: 700; font-size: 10px; }
-    .scale-label.pi { color: #a3e635; font-weight: 700; font-size: 11px; }
+    .scale-label.major { font-weight: 700; font-size: 14px; }
+    .scale-label.pi { color: #a3e635; font-weight: 700; font-size: 15px; }
     .art-info {
       font-family: ui-sans-serif, system-ui, sans-serif;
-      font-size: 11px;
+      font-size: 33px;
       color: rgba(255, 255, 255, 0.9);
       background: rgba(0,0,0,0.4);
       padding: 6px 10px;
@@ -86,6 +86,7 @@
       white-space: nowrap;
       pointer-events: none;
     }
+    .art-info .art-info-n { color: #a3e635; font-weight: 700; }
     .diameter-label {
       font-family: ui-sans-serif, system-ui, sans-serif;
       font-size: 12px;
@@ -197,17 +198,17 @@
     const refX0 = -piLen / 2;
     const circleOffsetX = refX0 - r;
 
-    const circleGeom = new THREE.BufferGeometry().setFromPoints(
-      Array.from({ length: 361 }, (_, i) => {
-        const a = (TAU * i) / 360;
-        return new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r, 0);
-      })
-    );
-    const circleLine = new THREE.Line(
-      circleGeom,
-      new THREE.LineBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.95 })
-    );
-    circleLine.position.x = circleOffsetX;
+    const circlePositions = [];
+    Array.from({ length: 361 }, (_, i) => {
+      const a = (TAU * i) / 360;
+      circlePositions.push(Math.cos(a) * r + circleOffsetX, Math.sin(a) * r, 0);
+    });
+    const circleLineGeom = new LineGeometry();
+    circleLineGeom.setPositions(circlePositions);
+    const PERIMETER_LINE_WIDTH = 0.022;
+    const circleLineMat = new LineMaterial({ color: 0xf97316, linewidth: PERIMETER_LINE_WIDTH, worldUnits: true });
+    const circleLine = new Line2(circleLineGeom, circleLineMat);
+    circleLineMat.resolution.set(renderer.getSize(new THREE.Vector2()));
     scene.add(circleLine);
 
     const axisMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.18 });
@@ -220,8 +221,7 @@
       axisMat
     ));
 
-    const PERIMETER_LINE_WIDTH = 0.022;
-    const completedLineMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.95 });
+    const completedLineColor = 0xb0b0b0;
     let perimeterLine = null;
     const completedLinesGroup = new THREE.Group();
     scene.add(completedLinesGroup);
@@ -280,7 +280,7 @@
     scene.add(new THREE.Line(piTickGeom, new THREE.LineBasicMaterial({ color: 0xa3e635, transparent: true, opacity: 0.9 })));
 
     const piVerticalY0 = scaleY - 0.08;
-    const piVerticalY1 = refY + 0.6;
+    const piVerticalY1 = refY + 1.35;
     const piDashedGeom = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(refX0 + piLen, piVerticalY0, 0),
       new THREE.Vector3(refX0 + piLen, piVerticalY1, 0),
@@ -315,7 +315,7 @@
     piDiv.className = 'scale-label pi';
     piDiv.textContent = '3.14';
     const piLabel = new CSS2DObject(piDiv);
-    piLabel.position.set(refX0 + piVal, labelY, 0);
+    piLabel.position.set(refX0 + piVal + 0.07, labelY, 0);
     piLabel.center.set(0.5, 1);
     scaleLabelsGroup.add(piLabel);
     scene.add(scaleLabelsGroup);
@@ -408,7 +408,14 @@
       const polyPts = regularPolygonPoints(forN, r, 0);
       const originX = refX0;
       const pts = perimeterToLinePoints(polyPts, originX, lineYForN(forN), 0);
-      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), completedLineMat.clone());
+      const positions = [];
+      pts.forEach((p) => { positions.push(p.x, p.y, p.z); });
+      const lineGeom = new LineGeometry();
+      lineGeom.setPositions(positions);
+      const lineMat = new LineMaterial({ color: completedLineColor, linewidth: PERIMETER_LINE_WIDTH, worldUnits: true });
+      const res = renderer.getSize(new THREE.Vector2());
+      lineMat.resolution.set(res.x, res.y);
+      const line = new Line2(lineGeom, lineMat);
       completedLinesGroup.add(line);
     }
 
@@ -446,7 +453,7 @@
         artInfoDiv.innerHTML = 'n — &nbsp; length —';
       } else {
         const Pn = polygonPerimeter(n);
-        artInfoDiv.innerHTML = 'n <b>' + n + '</b> &nbsp; <b>' + Pn.toFixed(4) + '</b>';
+        artInfoDiv.innerHTML = '<span class="art-info-n">n = ' + n + '</span> &nbsp; <b>' + Pn.toFixed(4) + '</b>';
       }
     }
 
@@ -539,6 +546,11 @@
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
       labelRenderer.setSize(window.innerWidth, window.innerHeight);
+      const res = renderer.getSize(new THREE.Vector2());
+      if (circleLine.material.resolution) circleLine.material.resolution.set(res.x, res.y);
+      completedLinesGroup.children.forEach((c) => {
+        if (c.material && c.material.resolution) c.material.resolution.set(res.x, res.y);
+      });
     }
     window.addEventListener('resize', onResize);
 
