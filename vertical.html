@@ -3,8 +3,8 @@
 
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>π from Inscribed Polygons (Diameter = 1)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>π from Inscribed Polygons (Vertical / Mobile)</title>
   <script type="importmap">
   {
     "imports": {
@@ -21,92 +21,20 @@
       background: #0b0e14;
       overflow: hidden;
     }
-
-    button {
-      appearance: none;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      background: rgba(255, 255, 255, 0.08);
-      color: rgba(255, 255, 255, 0.92);
-      padding: 8px 10px;
-      border-radius: 10px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: rgba(255, 255, 255, 0.12);
-    }
-
-    input[type="range"] {
-      width: 160px;
-    }
-
-    .muted {
-      color: rgba(255, 255, 255, 0.70);
-    }
-
-    #pi-reached {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(11, 14, 20, 0.85);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      pointer-events: none;
-    }
-    #pi-reached.show { display: flex; }
-    #pi-reached .box {
-      font-family: ui-sans-serif, system-ui, sans-serif;
-      font-size: clamp(22px, 4.5vw, 38px);
-      font-weight: 700;
-      color: rgba(255, 255, 255, 0.95);
-      text-align: center;
-      line-height: 1.4;
-    }
-    #pi-reached .box .pi-highlight { color: #a3e635; text-shadow: 0 0 24px rgba(163, 230, 53, 0.5); }
-    #pi-reached .box .pi-more { color: rgba(255, 255, 255, 0.5); font-weight: 600; }
-
-    .scale-label {
-      font-family: ui-monospace, "SF Mono", Monaco, monospace;
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.88);
-      white-space: nowrap;
-      text-shadow: 0 0 4px rgba(0,0,0,0.8);
-      pointer-events: none;
-    }
+    .scale-label { font-family: ui-monospace, "SF Mono", Monaco, monospace; font-size: 13px; color: rgba(255, 255, 255, 0.88); white-space: nowrap; text-shadow: 0 0 4px rgba(0,0,0,0.8); pointer-events: none; }
     .scale-label.major { font-weight: 700; font-size: 14px; }
     .scale-label.pi { color: #a3e635; font-weight: 700; font-size: 15px; }
-    .art-info {
-      font-family: ui-sans-serif, system-ui, sans-serif;
-      font-size: 33px;
-      color: rgba(255, 255, 255, 0.9);
-      background: rgba(0,0,0,0.4);
-      padding: 6px 10px;
-      border-radius: 8px;
-      white-space: nowrap;
-      pointer-events: none;
-    }
+    .art-info { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 28px; color: rgba(255, 255, 255, 0.9); background: rgba(0,0,0,0.4); padding: 6px 10px; border-radius: 8px; white-space: nowrap; pointer-events: none; }
     .art-info .art-info-n { color: #a3e635; font-weight: 700; }
     .art-info .art-info-value { color: #22d3ee; font-weight: 700; }
-    .diameter-label {
-      font-family: ui-sans-serif, system-ui, sans-serif;
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.85);
-      white-space: nowrap;
-      pointer-events: none;
-    }
-    .final-message {
-      font-family: ui-sans-serif, system-ui, sans-serif;
-      font-size: clamp(18px, 3.5vw, 32px);
-      font-weight: 700;
-      color: rgba(255, 255, 255, 0.95);
-      text-align: center;
-      line-height: 1.35;
-      pointer-events: none;
-    }
+    .diameter-label { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; color: rgba(255, 255, 255, 0.85); white-space: nowrap; pointer-events: none; }
+    .final-message { font-family: ui-sans-serif, system-ui, sans-serif; font-size: clamp(14px, 3vw, 24px); font-weight: 700; color: rgba(255, 255, 255, 0.95); text-align: center; line-height: 1.35; pointer-events: none; }
     .final-message .pi-highlight { color: #a3e635; text-shadow: 0 0 16px rgba(163, 230, 53, 0.5); }
     .final-message .pi-more { color: rgba(255, 255, 255, 0.5); font-weight: 600; }
     .final-message .final-pn-value { color: #22d3ee; font-weight: 700; }
+    #pi-reached { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(11, 14, 20, 0.85); pointer-events: none; }
+    #pi-reached.show { display: flex; }
+    #pi-reached .box { font-size: clamp(18px, 4vw, 28px); font-weight: 700; color: rgba(255, 255, 255, 0.95); text-align: center; }
   </style>
 </head>
 
@@ -114,7 +42,6 @@
   <script type="module">
 
     import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
-
     import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
     import { CSS2DRenderer, CSS2DObject } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/renderers/CSS2DRenderer.js';
     import { Line2 } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/lines/Line2.js';
@@ -123,7 +50,29 @@
 
     const TAU = Math.PI * 2;
     const DIAMETER = 1;
-    const r = DIAMETER / 2; // 0.5
+    const r = DIAMETER / 2;
+    const piLen = Math.PI;
+
+    // Vertical layout: 9:16. Content centered vertically so circle is not cut off; lines stack downward, scale below.
+    const DESIGN_ASPECT = 9 / 16;
+    const viewHeight = 3;
+    const viewWidth = viewHeight * DESIGN_ASPECT;
+
+    const refX0 = -0.5;
+    const scaleLength = 1.0;
+    const HORIZ_SCALE = 1 / piLen;
+    const circleOffsetX = 0;
+    const LINE_GAP = -0.036;
+    const DEFAULT_MAX_N = 30;
+    // Shift block down and center in view (avoid top cut-off; center vertically).
+    const refYRaw = 0.98;
+    const scaleYRaw = refYRaw + (DEFAULT_MAX_N - 3) * LINE_GAP - 0.22;
+    const blockTop = 1.5 + 0.5;
+    const blockBottom = scaleYRaw - 0.14;
+    const Y_OFFSET = (blockTop + blockBottom) / 2;
+    const circleCenterY = 1.5 - Y_OFFSET;
+    const refY = refYRaw - Y_OFFSET;
+    const scaleY = refY + (DEFAULT_MAX_N - 3) * LINE_GAP - 0.22;
 
     function polygonPerimeter(n) {
       return 2 * n * r * Math.sin(Math.PI / n);
@@ -140,31 +89,23 @@
       return pts;
     }
 
-    function perimeterToLinePoints(polygonPts, originX, originY, z = 0) {
+    function perimeterToLinePoints(polygonPts, originX, originY, z = 0, scaleX = 1) {
       const out = [new THREE.Vector3(originX, originY, z)];
       let x = originX;
       for (let i = 0; i < polygonPts.length - 1; i++) {
-        const a = polygonPts[i];
-        const b = polygonPts[i + 1];
-        const len = a.distanceTo(b);
-        x += len;
+        const len = polygonPts[i].distanceTo(polygonPts[i + 1]);
+        x += len * scaleX;
         out.push(new THREE.Vector3(x, originY, z));
       }
       return out;
     }
 
     const scene = new THREE.Scene();
-
-    const frustumSize = 4;
     const aspect = window.innerWidth / window.innerHeight;
-    const camera = new THREE.OrthographicCamera(
-      -frustumSize * aspect / 2,
-      frustumSize * aspect / 2,
-      frustumSize / 2,
-      -frustumSize / 2,
-      0.01,
-      100
-    );
+    const isPortrait = aspect < 1;
+    const camHalfW = isPortrait ? viewWidth / 2 : viewHeight * aspect / 2;
+    const camHalfH = viewHeight / 2;
+    const camera = new THREE.OrthographicCamera(-camHalfW, camHalfW, camHalfH, -camHalfH, 0.01, 100);
     camera.position.set(0, 0, 5);
     camera.lookAt(0, 0, 0);
 
@@ -190,85 +131,52 @@
     dir.position.set(3, 5, 4);
     scene.add(dir);
 
-    const grid = new THREE.GridHelper(20, 40, 0xffffff, 0xffffff);
-    grid.position.y = -1.1;
-    grid.material.opacity = 0.10;
+    const grid = new THREE.GridHelper(12, 24, 0xffffff, 0xffffff);
+    grid.position.set(0, 0.5, 0);
+    grid.material.opacity = 0.08;
     grid.material.transparent = true;
     scene.add(grid);
-
-    const piLen = Math.PI;
-    const refX0 = -piLen / 2;
-    const circleOffsetX = refX0 - r;
 
     const circlePositions = [];
     Array.from({ length: 361 }, (_, i) => {
       const a = (TAU * i) / 360;
-      circlePositions.push(Math.cos(a) * r + circleOffsetX, Math.sin(a) * r, 0);
+      circlePositions.push(Math.cos(a) * r, Math.sin(a) * r, 0);
     });
     const circleLineGeom = new LineGeometry();
     circleLineGeom.setPositions(circlePositions);
     const PERIMETER_LINE_WIDTH = 0.022;
     const circleLineMat = new LineMaterial({ color: 0xf97316, linewidth: PERIMETER_LINE_WIDTH, worldUnits: true });
     const circleLine = new Line2(circleLineGeom, circleLineMat);
+    circleLine.position.set(0, circleCenterY, 0);
     circleLineMat.resolution.set(renderer.getSize(new THREE.Vector2()));
     scene.add(circleLine);
-
-    const axisMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.18 });
-    scene.add(new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-4, 0, 0), new THREE.Vector3(4, 0, 0)]),
-      axisMat
-    ));
-    scene.add(new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, -3, 0), new THREE.Vector3(0, 3, 0)]),
-      axisMat
-    ));
 
     const completedLineColor = 0xb0b0b0;
     let perimeterLine = null;
     const completedLinesGroup = new THREE.Group();
     scene.add(completedLinesGroup);
 
-    const refY = -0.95;
-    const LINE_GAP = 0.042;
     const refGeom = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(refX0, refY - 0.18, 0),
-      new THREE.Vector3(refX0 + piLen, refY - 0.18, 0),
+      new THREE.Vector3(refX0 + scaleLength, refY - 0.18, 0),
     ]);
-    scene.add(new THREE.Line(
-      refGeom,
-      new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 })
-    ));
+    scene.add(new THREE.Line(refGeom, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 })));
 
-    function tick(x, y) {
-      const g = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(x, y - 0.05, 0),
-        new THREE.Vector3(x, y + 0.05, 0),
-      ]);
-      scene.add(new THREE.Line(
-        g,
-        new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 })
-      ));
-    }
-    tick(refX0, refY - 0.18);
-    tick(refX0 + piLen, refY - 0.18);
-
-    const scaleY = refY - 0.20;
-    const scaleTickLenMinor = 0.03;
-    const scaleTickLenMajor = 0.07;
+    const scaleTickLenMinor = 0.025;
+    const scaleTickLenMajor = 0.06;
     const scaleMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
     const scaleLine = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints([
         new THREE.Vector3(refX0, scaleY, 0),
-        new THREE.Vector3(refX0 + piLen, scaleY, 0),
+        new THREE.Vector3(refX0 + scaleLength, scaleY, 0),
       ]),
       scaleMat
     );
     scene.add(scaleLine);
     for (let i = 0; i <= 31; i++) {
       const v = i * 0.1;
-      const x = refX0 + v;
-      const isMajor = Math.abs(v - Math.round(v)) < 0.01 && v <= 3;
-      const len = isMajor ? scaleTickLenMajor : scaleTickLenMinor;
+      const x = refX0 + (v / piLen);
+      const len = (Math.abs(v - Math.round(v)) < 0.01 && v <= 3) ? scaleTickLenMajor : scaleTickLenMinor;
       const g = new THREE.BufferGeometry().setFromPoints([
         new THREE.Vector3(x, scaleY, 0),
         new THREE.Vector3(x, scaleY + len, 0),
@@ -276,40 +184,32 @@
       scene.add(new THREE.Line(g, scaleMat));
     }
     const piTickGeom = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(refX0 + piLen, scaleY, 0),
-      new THREE.Vector3(refX0 + piLen, scaleY + scaleTickLenMajor * 1.3, 0),
+      new THREE.Vector3(refX0 + scaleLength, scaleY, 0),
+      new THREE.Vector3(refX0 + scaleLength, scaleY + scaleTickLenMajor * 1.3, 0),
     ]);
     scene.add(new THREE.Line(piTickGeom, new THREE.LineBasicMaterial({ color: 0xa3e635, transparent: true, opacity: 0.9 })));
 
-    const piVerticalY0 = scaleY - 0.08;
-    const piVerticalY1 = refY + 1.35;
+    const piVerticalY0 = scaleY - 0.06;
+    const piVerticalY1 = refY + 0.45;
     const piDashedGeom = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(refX0 + piLen, piVerticalY0, 0),
-      new THREE.Vector3(refX0 + piLen, piVerticalY1, 0),
+      new THREE.Vector3(refX0 + scaleLength, piVerticalY0, 0),
+      new THREE.Vector3(refX0 + scaleLength, piVerticalY1, 0),
     ]);
     const piDashedLine = new THREE.Line(
       piDashedGeom,
-      new THREE.LineDashedMaterial({ color: 0xa3e635, dashSize: 0.08, gapSize: 0.05, transparent: true, opacity: 0.9 })
+      new THREE.LineDashedMaterial({ color: 0xa3e635, dashSize: 0.06, gapSize: 0.04, transparent: true, opacity: 0.9 })
     );
     piDashedLine.computeLineDistances();
     scene.add(piDashedLine);
 
-    const labelY = scaleY - 0.055;
+    const labelY = scaleY - 0.05;
     const scaleLabelsGroup = new THREE.Group();
-    const piVal = Math.PI;
-    const zeroDiv = document.createElement('div');
-    zeroDiv.className = 'scale-label major';
-    zeroDiv.textContent = '0';
-    const zeroLabel = new CSS2DObject(zeroDiv);
-    zeroLabel.position.set(refX0, labelY, 0);
-    zeroLabel.center.set(0.5, 1);
-    scaleLabelsGroup.add(zeroLabel);
-    [1, 2, 3].forEach((v) => {
+    [0, 1, 2, 3].forEach((v) => {
       const div = document.createElement('div');
-      div.className = 'scale-label major';
+      div.className = v === 0 ? 'scale-label major' : 'scale-label major';
       div.textContent = String(v);
       const obj = new CSS2DObject(div);
-      obj.position.set(refX0 + v, labelY, 0);
+      obj.position.set(refX0 + v / piLen, labelY, 0);
       obj.center.set(0.5, 1);
       scaleLabelsGroup.add(obj);
     });
@@ -317,7 +217,7 @@
     piDiv.className = 'scale-label pi';
     piDiv.textContent = '3.14';
     const piLabel = new CSS2DObject(piDiv);
-    piLabel.position.set(refX0 + piVal + 0.07, labelY, 0);
+    piLabel.position.set(refX0 + scaleLength + 0.04, labelY, 0);
     piLabel.center.set(0.5, 1);
     scaleLabelsGroup.add(piLabel);
     scene.add(scaleLabelsGroup);
@@ -333,30 +233,18 @@
     diameterDiv.className = 'diameter-label';
     diameterDiv.textContent = 'diameter = 1';
     const diameterLabel = new CSS2DObject(diameterDiv);
-    diameterLabel.position.set(circleOffsetX, -0.6, 0);
+    diameterLabel.position.set(0, circleCenterY - 0.38, 0);
     diameterLabel.center.set(0.5, 1);
     scene.add(diameterLabel);
 
     let finalMessageLabel = null;
-
     const elPiReached = document.getElementById('pi-reached');
 
     const DEFAULT_SPEED = 2;
-    const DEFAULT_MAX_N = 30;
-    const rngSpeed = document.getElementById('speed');
-    const rngMaxN = document.getElementById('maxn');
-    function getSpeed() { return rngSpeed ? parseFloat(rngSpeed.value) : DEFAULT_SPEED; }
-    function getMaxN() { return rngMaxN ? parseInt(rngMaxN.value, 10) : DEFAULT_MAX_N; }
+    function getSpeed() { return DEFAULT_SPEED; }
+    function getMaxN() { return DEFAULT_MAX_N; }
 
-    const DURATION = {
-      circle: 2.2,
-      polygon: 1.4,
-      unroll: 1.8,
-      showLength: 2.2,
-      piReached: 4
-    };
-
-    const NAMES = ['', '', '', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'nonagon', 'decagon'];
+    const DURATION = { circle: 2.2, polygon: 1.4, unroll: 1.8, showLength: 2.2 };
 
     let running = true;
     let n = 3;
@@ -364,33 +252,12 @@
     let phaseTime = 0;
     let unrollT = 0;
 
-    function phaseName(n) {
-      return NAMES[n] || n + '-gon';
-    }
-
-    function getPhaseMessage() {
-      if (phase === 'circle') return '① Circle (diameter = 1 → circumference = π)';
-      if (phase === 'polygon') return '② ' + phaseName(n) + ' inside: polygon split into ' + n + ' sides';
-      if (phase === 'unroll') return '③ Same perimeter unfolding one by one into the horizontal line';
-      if (phase === 'show_length') return '④ Length = Pₙ. More sides → longer line → approaches π';
-      if (phase === 'done') return 'π reached ≈ 3.14';
-      return '';
-    }
-
-    const btnToggle = document.getElementById('toggle');
-    const btnStep = document.getElementById('step');
-    const btnReset = document.getElementById('reset');
-    if (btnToggle) btnToggle.addEventListener('click', () => {
-      running = !running;
-      btnToggle.textContent = running ? 'Pause' : 'Play';
-    });
-
     function goToPhase(p) {
       phase = p;
       phaseTime = 0;
       if (p === 'unroll') unrollT = 0;
       if (p === 'circle') {
-        elPiReached.classList.remove('show');
+        if (elPiReached) elPiReached.classList.remove('show');
         if (finalMessageLabel) {
           scene.remove(finalMessageLabel);
           finalMessageLabel = null;
@@ -403,13 +270,15 @@
           if (c.material) c.material.dispose();
         }
       }
-      if (p === 'done') { /* final message shown in scene above lines */ }
+    }
+
+    function lineYForN(n) {
+      return refY + (n - 3) * LINE_GAP;
     }
 
     function saveCompletedLine(forN) {
       const polyPts = regularPolygonPoints(forN, r, 0);
-      const originX = refX0;
-      const pts = perimeterToLinePoints(polyPts, originX, lineYForN(forN), 0);
+      const pts = perimeterToLinePoints(polyPts, refX0, lineYForN(forN), 0, HORIZ_SCALE);
       const positions = [];
       pts.forEach((p) => { positions.push(p.x, p.y, p.z); });
       const lineGeom = new LineGeometry();
@@ -422,33 +291,8 @@
     }
 
     function setN(newN) {
-      const maxN = getMaxN();
-      n = Math.max(3, Math.min(newN, maxN));
+      n = Math.max(3, Math.min(newN, getMaxN()));
     }
-
-    if (btnStep) btnStep.addEventListener('click', () => {
-      running = false;
-      if (btnToggle) btnToggle.textContent = 'Play';
-      if (phase === 'circle') goToPhase('polygon');
-      else if (phase === 'polygon') goToPhase('unroll');
-      else if (phase === 'unroll') { unrollT = 1; goToPhase('show_length'); }
-      else if (phase === 'show_length') {
-        if (n >= getMaxN()) goToPhase('done');
-        else { saveCompletedLine(n); setN(n + 1); goToPhase('polygon'); }
-      } else if (phase === 'done') { /* stay at final stage */ }
-      updateGeometry();
-      updateHUD();
-    });
-
-    if (btnReset) btnReset.addEventListener('click', () => {
-      running = true;
-      if (btnToggle) btnToggle.textContent = 'Pause';
-      goToPhase('circle');
-      setN(3);
-      unrollT = 0;
-      updateGeometry();
-      updateHUD();
-    });
 
     function updateHUD() {
       if (phase === 'circle') {
@@ -467,30 +311,25 @@
       );
     }
 
-    function lineYForN(n) {
-      return refY + (n - 3) * LINE_GAP;
-    }
-
     function getPerimeterPoints() {
       const polyPts = regularPolygonPoints(n, r, 0);
-      const Pn = polygonPerimeter(n);
       const originX = refX0;
       const originY = lineYForN(n);
+      const polyOff = (p) => new THREE.Vector3(p.x, p.y + circleCenterY, p.z);
 
       if (phase === 'polygon' || (phase === 'unroll' && unrollT <= 0)) {
-        return polyPts.map((p) => new THREE.Vector3(p.x + circleOffsetX, p.y, p.z));
+        return polyPts.map(polyOff);
       }
       if (phase === 'show_length' || phase === 'done' || (phase === 'unroll' && unrollT >= 1)) {
-        return perimeterToLinePoints(polyPts, originX, originY, 0);
+        return perimeterToLinePoints(polyPts, originX, originY, 0, HORIZ_SCALE);
       }
 
-      const polyOff = (p) => new THREE.Vector3(p.x + circleOffsetX, p.y, p.z);
       const unfolded = [];
       let x = originX;
       unfolded.push(new THREE.Vector3(x, originY, 0));
       for (let i = 0; i < n; i++) {
         const len = polyPts[i].distanceTo(polyPts[i + 1]);
-        x += len;
+        x += len * HORIZ_SCALE;
         unfolded.push(new THREE.Vector3(x, originY, 0));
       }
 
@@ -500,7 +339,6 @@
 
       const pts = [];
       if (seg === 0 && segT <= 0) return polyPts.map(polyOff);
-
       if (seg === 0) {
         pts.push(lerpV3(polyOff(polyPts[0]), unfolded[0], segT));
         pts.push(lerpV3(polyOff(polyPts[1]), unfolded[1], segT));
@@ -520,9 +358,7 @@
         perimeterLine.material.dispose();
         perimeterLine = null;
       }
-
       if (phase === 'circle' || n < 3) return;
-
       const pts = getPerimeterPoints();
       if (pts.length < 2) return;
       const positions = [];
@@ -541,10 +377,13 @@
 
     function onResize() {
       const aspect = window.innerWidth / window.innerHeight;
-      camera.left = -frustumSize * aspect / 2;
-      camera.right = frustumSize * aspect / 2;
-      camera.top = frustumSize / 2;
-      camera.bottom = -frustumSize / 2;
+      const isPortrait = aspect < 1;
+      const camHalfW = isPortrait ? viewWidth / 2 : viewHeight * aspect / 2;
+      const camHalfH = viewHeight / 2;
+      camera.left = -camHalfW;
+      camera.right = camHalfW;
+      camera.top = camHalfH;
+      camera.bottom = -camHalfH;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
       labelRenderer.setSize(window.innerWidth, window.innerHeight);
@@ -577,10 +416,7 @@
             updateHUD();
           }
         } else if (phase === 'polygon') {
-          if (phaseTime >= DURATION.polygon) {
-            goToPhase('unroll');
-            unrollT = 0;
-          }
+          if (phaseTime >= DURATION.polygon) goToPhase('unroll');
         } else if (phase === 'unroll') {
           unrollT = Math.min(1, phaseTime / DURATION.unroll);
           unrollT = 0.5 - 0.5 * Math.cos(unrollT * Math.PI);
@@ -607,8 +443,8 @@
               const piStr = Math.PI.toFixed(14);
               const piHighlight = piStr.slice(0, 4);
               const piMore = piStr.slice(4);
-              finalMessageLabel.element.innerHTML = '<div style="margin-bottom:0.35em;">At n = ' + n + ': Pₙ = <span class="final-pn-value">' + PnFinal + '</span></div><div>As n → ∞: π = <span class="pi-highlight">' + piHighlight + '</span><span class="pi-more">' + piMore + '</span></div>';
-              finalMessageLabel.position.set(0, lineYForN(n) + 0.48, 0);
+              finalMessageLabel.element.innerHTML = '<div style="margin-bottom:0.25em;">At n = ' + n + ': Pₙ = <span class="final-pn-value">' + PnFinal + '</span></div><div>As n → ∞: π = <span class="pi-highlight">' + piHighlight + '</span><span class="pi-more">' + piMore + '</span></div>';
+              finalMessageLabel.position.set(0, lineYForN(n) + 0.38, 0);
             } else {
               saveCompletedLine(n);
               setN(n + 1);
@@ -617,8 +453,6 @@
             updateGeometry();
             updateHUD();
           }
-        } else if (phase === 'done') {
-          // stay at final stage, no restart
         }
       }
 
@@ -628,10 +462,7 @@
     animate();
 
   </script>
-
-  <div id="pi-reached" aria-live="polite">
-    <div class="box">π ≈ 3.14</div>
-  </div>
+  <div id="pi-reached" aria-live="polite"><div class="box">π ≈ 3.14</div></div>
 </body>
 
 </html>
