@@ -131,12 +131,6 @@
     dir.position.set(3, 5, 4);
     scene.add(dir);
 
-    const grid = new THREE.GridHelper(12, 24, 0xffffff, 0xffffff);
-    grid.position.set(0, 0.5, 0);
-    grid.material.opacity = 0.08;
-    grid.material.transparent = true;
-    scene.add(grid);
-
     const circlePositions = [];
     Array.from({ length: 361 }, (_, i) => {
       const a = (TAU * i) / 360;
