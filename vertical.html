@@ -28,7 +28,7 @@
     .art-info .art-info-n { color: #a3e635; font-weight: 700; }
     .art-info .art-info-value { color: #22d3ee; font-weight: 700; }
     .diameter-label { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; color: rgba(255, 255, 255, 0.85); white-space: nowrap; pointer-events: none; }
-    .final-message { font-family: ui-sans-serif, system-ui, sans-serif; font-size: clamp(14px, 3vw, 24px); font-weight: 700; color: rgba(255, 255, 255, 0.95); text-align: center; line-height: 1.35; pointer-events: none; }
+    .final-message { font-family: ui-sans-serif, system-ui, sans-serif; font-size: clamp(14px, 3vw, 24px); font-weight: 700; color: rgba(255, 255, 255, 0.95); text-align: center; line-height: 1.35; pointer-events: none; background: rgba(11, 14, 20, 0.92); padding: 10px 16px; border-radius: 10px; box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); }
     .final-message .pi-highlight { color: #a3e635; text-shadow: 0 0 16px rgba(163, 230, 53, 0.5); }
     .final-message .pi-more { color: rgba(255, 255, 255, 0.5); font-weight: 600; }
     .final-message .final-pn-value { color: #22d3ee; font-weight: 700; }
@@ -156,12 +156,6 @@
     const completedLinesGroup = new THREE.Group();
     scene.add(completedLinesGroup);
 
-    const refGeom = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(refX0, refY - 0.18, 0),
-      new THREE.Vector3(refX0 + scaleLength, refY - 0.18, 0),
-    ]);
-    scene.add(new THREE.Line(refGeom, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 })));
-
     const scaleTickLenMinor = 0.025;
     const scaleTickLenMajor = 0.06;
     const scaleMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
@@ -233,8 +227,8 @@
     diameterDiv.className = 'diameter-label';
     diameterDiv.textContent = 'diameter = 1';
     const diameterLabel = new CSS2DObject(diameterDiv);
-    diameterLabel.position.set(0, circleCenterY - 0.38, 0);
-    diameterLabel.center.set(0.5, 1);
+    diameterLabel.position.set(0, circleCenterY + 0.56, 0);
+    diameterLabel.center.set(0.5, 0);
     scene.add(diameterLabel);
 
     let finalMessageLabel = null;
